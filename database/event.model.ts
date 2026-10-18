@@ -40,7 +40,7 @@ function normalizeDate(value: string): string {
 }
 
 function normalizeTime(value: string): string {
-  const time = /^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?$/i.exec(value.trim());
+  const time = /^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i.exec(value.trim());
   if (!time) throw new Error("Event time must use HH:mm or h:mm AM/PM format");
 
   let hours = Number(time[1]);
@@ -84,6 +84,23 @@ const eventSchema = new Schema<EventFields>(
 
 eventSchema.index({ slug: 1 }, { unique: true });
 
+eventSchema.pre("validate", function (this: EventDocument) {
+  // Let required-field validation handle missing titles.
+  if (!this.title) return;
+
+  // Regenerate the URL slug only when a new event is created or its title changes.
+  if (this.isNew || this.isModified("title")) {
+    this.slug = this.title
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+    if (!this.slug) throw new Error("Event title must produce a non-empty slug");
+  }
+});
+
 eventSchema.pre("save", function (this: EventDocument) {
   // Trim required text fields so whitespace-only values fail validation.
   const requiredFields: Array<
@@ -110,18 +127,6 @@ eventSchema.pre("save", function (this: EventDocument) {
   }
   if (this.tags.length === 0 || this.tags.some((tag) => !tag.trim())) {
     throw new Error("Event tags must contain non-empty items");
-  }
-
-  // Regenerate the URL slug only when a new event is created or its title changes.
-  if (this.isNew || this.isModified("title")) {
-    this.slug = this.title
-      .normalize("NFKD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
-    if (!this.slug) throw new Error("Event title must produce a non-empty slug");
   }
 
   // Store dates and times in predictable, sortable formats.

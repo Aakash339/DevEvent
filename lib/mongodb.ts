@@ -8,8 +8,6 @@ function getMongoDbUri(): string {
   return uri;
 }
 
-const MONGODB_URI = getMongoDbUri();
-
 // Keep the connection promise on globalThis so hot reloads reuse it in development.
 type MongooseCache = {
   conn: Mongoose | null;
@@ -31,7 +29,8 @@ async function connectToDatabase(): Promise<Mongoose> {
   }
 
   if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI);
+    const uri = getMongoDbUri();
+    cached.promise = mongoose.connect(uri);
   }
 
   try {
