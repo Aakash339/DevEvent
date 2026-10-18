@@ -22,6 +22,7 @@ export interface EventFields {
 
 type EventDocument = HydratedDocument<EventFields>;
 
+/** Validates an event date and returns it in YYYY-MM-DD format. */
 function normalizeDate(value: string): string {
   const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
   const parsed = dateOnly
@@ -48,6 +49,7 @@ function normalizeDate(value: string): string {
   return isoDate;
 }
 
+/** Validates an event time and returns it in 24-hour HH:mm format. */
 function normalizeTime(value: string): string {
   const time = /^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i.exec(value.trim());
 
@@ -109,7 +111,10 @@ const eventSchema = new Schema<EventFields>(
 
 eventSchema.index({ slug: 1 }, { unique: true });
 
-eventSchema.pre("validate", function (this: EventDocument) {
+eventSchema.pre(
+  "validate",
+  /** Generates a unique slug before event validation when needed. */
+  function (this: EventDocument) {
   // Let required-field validation handle missing titles.
   if (!this.title) return;
 
@@ -126,9 +131,13 @@ eventSchema.pre("validate", function (this: EventDocument) {
     // Append the document ID to prevent collisions and support non-Latin titles.
     this.slug = `${baseSlug || "event"}-${this._id.toString()}`;
   }
-});
+  },
+);
 
-eventSchema.pre("save", function (this: EventDocument) {
+eventSchema.pre(
+  "save",
+  /** Validates required event text and normalizes its date and time. */
+  function (this: EventDocument) {
   // Trim required text fields so whitespace-only values fail validation.
   const requiredFields: Array<
       | "title"
@@ -173,7 +182,8 @@ eventSchema.pre("save", function (this: EventDocument) {
   // Store dates and times in predictable, sortable formats.
   this.date = normalizeDate(this.date);
   this.time = normalizeTime(this.time);
-});
+  },
+);
 
 export const Event: Model<EventFields> =
     (mongoose.models.Event as Model<EventFields> | undefined) ??

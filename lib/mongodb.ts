@@ -1,5 +1,6 @@
 import mongoose, { type Mongoose } from "mongoose";
 
+/** Returns the configured MongoDB URI or throws when it is missing. */
 function getMongoDbUri(): string {
   const uri = process.env.MONGODB_URI;
   if (!uri) {
@@ -23,6 +24,7 @@ const cached = (globalWithMongoose.mongooseCache ??= {
   promise: null,
 });
 
+/** Reuses the cached Mongoose connection or creates and caches one. */
 async function connectToDatabase(): Promise<Mongoose> {
   if (cached.conn) {
     return cached.conn;
