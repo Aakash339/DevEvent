@@ -111,6 +111,33 @@ const eventSchema = new Schema<EventFields>(
 
 eventSchema.index({ slug: 1 }, { unique: true });
 
+const eventWriteOperations: Array<
+  "updateOne" | "updateMany" | "findOneAndUpdate" | "replaceOne" | "findOneAndReplace"
+> = [
+  "updateOne",
+  "updateMany",
+  "findOneAndUpdate",
+  "replaceOne",
+  "findOneAndReplace",
+];
+
+/** Blocks write methods that bypass event validation, normalization, and slug hooks. */
+function requireEventSavePath(): never {
+  throw new Error("Load the event and save it to preserve event invariants");
+}
+
+eventSchema.pre(eventWriteOperations, requireEventSavePath);
+eventSchema.pre("insertMany", requireEventSavePath);
+eventSchema.pre("bulkWrite", requireEventSavePath);
+
+/** Prevents deleting events while bookings may still reference them. */
+function preventEventDeletion(): never {
+  throw new Error("Event deletion is disabled to protect booking references");
+}
+
+eventSchema.pre(["deleteOne", "deleteMany", "findOneAndDelete"], preventEventDeletion);
+eventSchema.pre("deleteOne", { document: true, query: false }, preventEventDeletion);
+
 eventSchema.pre(
   "validate",
   /** Generates a unique slug before event validation when needed. */

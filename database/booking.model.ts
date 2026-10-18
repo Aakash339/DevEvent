@@ -12,6 +12,16 @@ type BookingDocument = HydratedDocument<BookingFields>;
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+const bookingWriteOperations: Array<
+  "updateOne" | "updateMany" | "findOneAndUpdate" | "replaceOne" | "findOneAndReplace"
+> = [
+  "updateOne",
+  "updateMany",
+  "findOneAndUpdate",
+  "replaceOne",
+  "findOneAndReplace",
+];
+
 const bookingSchema = new Schema<BookingFields>(
   {
     eventId: {
@@ -30,6 +40,15 @@ const bookingSchema = new Schema<BookingFields>(
   },
   { timestamps: true },
 );
+
+/** Blocks bulk writes that bypass booking email and event-reference checks. */
+function requireBookingSavePath(): never {
+  throw new Error("Load the booking and save it to preserve booking invariants");
+}
+
+bookingSchema.pre(bookingWriteOperations, requireBookingSavePath);
+bookingSchema.pre("insertMany", requireBookingSavePath);
+bookingSchema.pre("bulkWrite", requireBookingSavePath);
 
 bookingSchema.pre(
   "save",
