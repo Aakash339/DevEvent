@@ -23,3 +23,15 @@ export const getSimilarEventsBySlug = async (
         return [];
     }
 }
+export const getAllEvents = async (): Promise<(EventFields & { _id: string })[]> => {
+    try {
+        await connectDB();
+
+        const events = await Event.find({}).lean();
+
+        return JSON.parse(JSON.stringify(events));
+    } catch (error) {
+        console.error("Failed to fetch events:", error);
+        return [];
+    }
+};
