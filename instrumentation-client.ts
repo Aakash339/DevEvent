@@ -1,5 +1,9 @@
+import posthog from "posthog-js";
 
-// PostHog analytics temporarily disabled.
-// Enable it later when you have a valid PostHog project token.
-
-export {};
+posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
+    api_host: "/ingest",
+    ui_host: "https://us.posthog.com",
+    defaults: "2025-05-24",
+    capture_exceptions: true,
+    debug: process.env.NODE_ENV === "development",
+});
