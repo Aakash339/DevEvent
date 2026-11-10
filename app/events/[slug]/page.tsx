@@ -36,7 +36,15 @@ const EventTags=({tags}: {tags: string[]}) =>(
 const EventDetailsContent = async ({ params }: { params: Promise<{ slug: string }> }) => {
     const { slug } = await params;
     const request = await fetch(`${BASE_URL}/api/events/${slug}`);
+
+    if (!request.ok) {
+        console.error("Event API failed:", request.status);
+        return notFound();
+    }
+
     const { event } = await request.json();
+
+    if (!event) return notFound();
 
     const {
         _id,
