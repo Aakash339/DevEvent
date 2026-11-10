@@ -1,7 +1,11 @@
 import {notFound} from "next/navigation";
 import Image from "next/image";
 import BookEvent from "@/components/BookEvent";
-import {getSimilarEventsBySlug} from "@/lib/actions/event.action";
+import {
+    getSimilarEventsBySlug,
+    getEventBySlug
+} from "@/lib/actions/event.action";
+
 import EventCard from "@/components/EventCard";
 import { Suspense } from "react";
 
@@ -35,14 +39,7 @@ const EventTags=({tags}: {tags: string[]}) =>(
 
 const EventDetailsContent = async ({ params }: { params: Promise<{ slug: string }> }) => {
     const { slug } = await params;
-    const request = await fetch(`${BASE_URL}/api/events/${slug}`);
-
-    if (!request.ok) {
-        console.error("Event API failed:", request.status);
-        return notFound();
-    }
-
-    const { event } = await request.json();
+    const event = await getEventBySlug(slug);
 
     if (!event) return notFound();
 

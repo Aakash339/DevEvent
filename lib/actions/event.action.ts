@@ -35,3 +35,20 @@ export const getAllEvents = async (): Promise<(EventFields & { _id: string })[]>
         return [];
     }
 };
+
+export const getEventBySlug = async (
+    slug: string
+): Promise<(EventFields & { _id: string }) | null> => {
+    try {
+        await connectDB();
+
+        const event = await Event.findOne({ slug }).lean();
+
+        if (!event) return null;
+
+        return JSON.parse(JSON.stringify(event));
+    } catch (error) {
+        console.error("Failed to fetch event:", error);
+        return null;
+    }
+};
