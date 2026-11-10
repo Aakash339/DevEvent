@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import posthog from 'posthog-js';
 
 interface BookEventProps {
@@ -12,25 +12,49 @@ interface BookEventProps {
 const BookEvent = ({ eventId, slug }: BookEventProps) => {
     const [email, setEmail] = useState('');
     const [submitted, setSubmitted] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        setLoading(true);
+        setError('');
 
-        // Track booking attempt
         posthog.capture('booking_started', {
             event_id: eventId,
             event_slug: slug,
         });
 
-        // Simulate booking submission
-        setTimeout(() => {
+        try {
+            const response = await fetch('/api/bookings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ eventId, email }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Booking failed.');
+            }
+
             posthog.capture('booking_completed', {
                 event_id: eventId,
                 event_slug: slug,
             });
 
             setSubmitted(true);
-        }, 1000);
+        } catch (err) {
+            setError(
+                err instanceof Error
+                    ? err.message
+                    : 'Something went wrong. Please try again.'
+            );
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -51,8 +75,16 @@ const BookEvent = ({ eventId, slug }: BookEventProps) => {
                         />
                     </div>
 
-                    <button type="submit" className="button-submit">
-                        Submit
+                    {error && (
+                        <p className="text-sm text-red-500">{error}</p>
+                    )}
+
+                    <button
+                        type="submit"
+                        className="button-submit"
+                        disabled={loading}
+                    >
+                        {loading ? 'Booking...' : 'Submit'}
                     </button>
                 </form>
             )}

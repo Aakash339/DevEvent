@@ -40,6 +40,10 @@ const bookingSchema = new Schema<BookingFields>(
   },
   { timestamps: true },
 );
+bookingSchema.index(
+    { eventId: 1, email: 1 },
+    { unique: true }
+);
 
 /** Blocks bulk writes that bypass booking email and event-reference checks. */
 function requireBookingSavePath(): never {
